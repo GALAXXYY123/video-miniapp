@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Видео в мини‑приложении</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    html,body { margin:0; padding:0; height:100%; background:#000; }
+    .wrap { position:relative; display:flex; align-items:center; justify-content:center; height:100%; }
+    video { width:100%; height:auto; max-height:100vh; background:#000; }
+    #unmute {
+      position:absolute; left:50%; bottom:24px; transform:translateX(-50%);
+      padding:10px 14px;
+      border:0;
+      background:transparent;
+      color:#fff;
+      display:none;
+      cursor:pointer;
+      font-family:"Press Start 2P", monospace;
+      font-size:14px;
+      line-height:1.2;
+      letter-spacing:0.5px;
+      text-transform:uppercase;
+      text-shadow:0 0 6px rgba(0,0,0,0.6), 0 0 2px rgba(0,0,0,0.8);
+    }
+    #hint {
+      position:absolute; top:12px; left:50%; transform:translateX(-50%);
+      color:#fff; font-size:14px; opacity:.8; text-align:center; padding:0 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="hint">Видео запустится автоматически. Нажмите «Включить звук», если он выключен.</div>
+    <video id="vid"
+           playsinline
+           webkit-playsinline
+           muted
+           autoplay
+           loop
+           preload="auto"
+           controlslist="nodownload noplaybackrate">
+      <source src="assets/video.mp4" type="video/mp4">
+      Ваш браузер не поддерживает воспроизведение видео.
+    </video>
+    <button id="unmute">Включить звук</button>
+  </div>
+  <script>
+    const tg = window.Telegram?.WebApp;
+    tg?.ready();
+    try { tg?.expand(); } catch(e) {}
+
+    const vid = document.getElementById('vid');
+    const unmute = document.getElementById('unmute');
+
+    function tryPlayWithSoundSilently() {
+      vid.muted = true;
+      const p = vid.play?.();
+      if (p && p.catch) p.catch(() => {});
+      setTimeout(() => {
+        vid.muted = false;
+        const p2 = vid.play?.();
+        if (p2 && p2.catch) p2.catch(() => showUnmute());
+      }, 100);
+    }
+
+    function showUnmute() {
+      unmute.style.display = 'block';
+    }
+
+    vid.addEventListener('play', () => {
+      if (vid.muted) showUnmute();
+    });
+    vid.addEventListener('error', () => showUnmute());
+
+    function enableSound() {
+      vid.muted = false;
+      const p = vid.play?.();
+      if (p && p.catch) p.catch(() => {});
+      unmute.style.display = 'none';
+    }
+
+    unmute.addEventListener('click', enableSound);
+
+    document.body.addEventListener('click', function onFirstTap() {
+      enableSound();
+      document.body.removeEventListener('click', onFirstTap);
+    }, { once: true });
+
+    tryPlayWithSoundSilently();
+  </script>
+</body>
+</html>
